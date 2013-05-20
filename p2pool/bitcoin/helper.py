@@ -94,5 +94,5 @@ def submit_block_rpc(block, ignore_failure, bitcoind, bitcoind_work, net):
         print >>sys.stderr, 'Block submittal result: %s (%r) Expected: %s' % (success, result, success_expected)
 
 def submit_block(block, ignore_failure, factory, bitcoind, bitcoind_work, net):
-    #submit_block_p2p(block, factory, net)
+    submit_block_p2p(block, factory, net)
     submit_block_rpc(block, ignore_failure, bitcoind, bitcoind_work, net)
