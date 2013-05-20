@@ -363,13 +363,6 @@ class WorkerBridge(worker_interface.WorkerBridge):
                 except:
                     log.err(None, 'Error while processing merged mining POW:')
 
-            print "pow hash", pow_hash
-            print "share info target", share_info['bits'].target
-            print "header target", header['bits'].target
-            print "header hash", header_hash
-            print "received hash", received_header_hashes
-
-            #assert pow_hash <= share_info['bits'].target
             
             if pow_hash <= share_info['bits'].target and header_hash not in received_header_hashes:
                 
