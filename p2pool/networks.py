@@ -10,18 +10,18 @@ from p2pool.util import math
 nets = dict(
     yacoin=math.Object(
         PARENT=networks.nets['yacoin'],
-        SHARE_PERIOD=30, # seconds
-        CHAIN_LENGTH=24*60*60//30, # shares
-        REAL_CHAIN_LENGTH=24*60*60//30, # shares
+        SHARE_PERIOD=3, # seconds
+        CHAIN_LENGTH=24*60*60//3, # shares
+        REAL_CHAIN_LENGTH=24*60*60//3, # shares
         TARGET_LOOKBEHIND=200, # shares
         SPREAD=3, # blocks
-        IDENTIFIER='c138e5b9e7923513'.decode('hex'),
-        PREFIX='d206c3a24ee749b3'.decode('hex'),
-        P2P_PORT=12578,
+        IDENTIFIER='c138e5b9e7923514'.decode('hex'),
+        PREFIX='d206c3a24ee749b4'.decode('hex'),
+        P2P_PORT=12579,
         MIN_TARGET=0,
         MAX_TARGET=2**256//2**20 - 1,
         PERSIST=False,
-        WORKER_PORT=8336,
+        WORKER_PORT=8339,
         BOOTSTRAP_ADDRS='pool.bitcn.org'.split(' '),
         ANNOUNCE_CHANNEL='#p2pool-alt',
         VERSION_CHECK=lambda v: v >= 60004,

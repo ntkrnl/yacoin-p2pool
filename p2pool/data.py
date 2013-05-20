@@ -157,8 +157,8 @@ class Share(object):
 
         this_script = share_data['script']
 
-
         height, last = tracker.get_height_and_last(share_data['previous_share_hash'])
+
         assert height >= net.REAL_CHAIN_LENGTH or last is None
         if height < net.TARGET_LOOKBEHIND:
             pre_target3 = net.MAX_TARGET
@@ -203,7 +203,7 @@ class Share(object):
             min(height, net.REAL_CHAIN_LENGTH),
             65535*net.SPREAD*bitcoin_data.target_to_average_attempts(block_target),
         )
-
+        
         # calculate "raw" subsidy
         raw_subsidy = share_data['subsidy'] - 4 * minout - get_coinbase_fee(share_data, len(raw_weights) + 1)
 
@@ -290,7 +290,7 @@ class Share(object):
             ))
             assert share.header == header # checks merkle_root
             return share
-        
+
         return share_info, gentx, other_transaction_hashes, get_share
     
     @classmethod
@@ -318,7 +318,7 @@ class Share(object):
         if len(self.merkle_link['branch']) > 16:
             raise ValueError('merkle branch too long!')
         
-        #assert not self.hash_link['extra_data'], repr(self.hash_link['extra_data'])
+        assert not self.hash_link['extra_data'], repr(self.hash_link['extra_data'])
         
         self.share_data = self.share_info['share_data']
         self.max_target = self.share_info['max_bits'].target
@@ -327,7 +327,7 @@ class Share(object):
         self.previous_hash = self.share_data['previous_share_hash']
         self.new_script = self.share_data['script']
         self.desired_version = self.share_data['desired_version']
-        
+
         n = set()
         for share_count, tx_count in self.iter_transaction_hash_refs():
             assert share_count < 110
@@ -504,6 +504,7 @@ class WeightsSkipList(forest.TrackerSkipList):
             return -1
     
     def finalize(self, (share_count, weights_list, total_weight, total_donation_weight), (max_shares, desired_weight)):
+
         assert share_count <= max_shares and total_weight <= desired_weight
         assert share_count == max_shares or total_weight == desired_weight
         return math.add_dicts(*math.flatten_linked_list(weights_list)), total_weight, total_donation_weight
@@ -692,11 +693,10 @@ def calculate_payout(weight, total_weight, subsidy):
     return payout
 
 def get_expected_payouts(tracker, best_share_hash, block_target, subsidy, net):
-
     weights, total_weight, donation_weight = tracker.get_cumulative_weights(best_share_hash, min(tracker.get_height(best_share_hash), net.REAL_CHAIN_LENGTH), 65535*net.SPREAD*bitcoin_data.target_to_average_attempts(block_target))
 
     #res = dict((script, subsidy*weight//total_weight) for script, weight in weights.iteritems())
-
+    
     res = dict((script, calculate_payout(weight, total_weight, subsidy)) for script, weight in weights.iteritems())
     res[DONATION_SCRIPT] = res.get(DONATION_SCRIPT, 0) + subsidy - sum(res.itervalues())
 

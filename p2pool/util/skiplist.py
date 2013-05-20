@@ -11,6 +11,7 @@ class SkipList(object):
     
     @memoize.memoize_with_backing(memoize.LRUDict(5))
     def __call__(self, start, *args):
+        
         updates = {}
         pos = start
         sol = self.initial_solution(start, args)

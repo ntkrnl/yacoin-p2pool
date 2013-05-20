@@ -46,8 +46,8 @@ nets = dict(
         BLOCK_PERIOD=60, # s
         SYMBOL='YAC',
         CONF_FILE_FUNC=lambda: os.path.join(os.path.join(os.environ['APPDATA'], 'yacoin') if platform.system() == 'Windows' else os.path.expanduser('~/Library/Application Support/yacoin/') if platform.system() == 'Darwin' else os.path.expanduser('~/.yacoin'), 'yacoin.conf'),
-        BLOCK_EXPLORER_URL_PREFIX='http://yacoin.org/block/',
-        ADDRESS_EXPLORER_URL_PREFIX='http://yacoin.org/address/',
+        BLOCK_EXPLORER_URL_PREFIX='http://yacexplorer.tk/block/',
+        ADDRESS_EXPLORER_URL_PREFIX='http://yacexplorer.tk/address/',
         SANE_TARGET_RANGE=(2**256//2**20//1000 - 1, 2**256//2**20 - 1),
     ),
 

@@ -297,6 +297,7 @@ class WorkerBridge(worker_interface.WorkerBridge):
         received_header_hashes = set()
         
         def got_response(header, user, coinbase_nonce):
+
             assert len(coinbase_nonce) == self.COINBASE_NONCE_LENGTH == 4
             new_packed_gentx = packed_gentx[:-4-4] + coinbase_nonce + packed_gentx[-4:] if coinbase_nonce != '\0'*self.COINBASE_NONCE_LENGTH else packed_gentx
             new_gentx = bitcoin_data.tx_type.unpack(new_packed_gentx) if coinbase_nonce != '\0'*self.COINBASE_NONCE_LENGTH else gentx
@@ -361,8 +362,17 @@ class WorkerBridge(worker_interface.WorkerBridge):
                             log.err(err, 'Error submitting merged block:')
                 except:
                     log.err(None, 'Error while processing merged mining POW:')
+
+            print "pow hash", pow_hash
+            print "share info target", share_info['bits'].target
+            print "header target", header['bits'].target
+            print "header hash", header_hash
+            print "received hash", received_header_hashes
+
+            #assert pow_hash <= share_info['bits'].target
             
             if pow_hash <= share_info['bits'].target and header_hash not in received_header_hashes:
+                
                 share = get_share(header, pack.IntType(32).unpack(coinbase_nonce))
                 
                 print 'GOT SHARE! %s %s prev %s age %.2fs%s' % (
