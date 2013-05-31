@@ -22,7 +22,7 @@ nets = dict(
         MAX_TARGET=2**256//2**20 - 1,
         PERSIST=False,
         WORKER_PORT=8336,
-        BOOTSTRAP_ADDRS='pool.bitcn.org'.split(' '),
+        BOOTSTRAP_ADDRS='pool.bitcn.org 81.17.30.121 199.195.213.96 116.52.11.27 184.175.53.111 212.92.177.74 88.190.223.101'.split(' '),
         ANNOUNCE_CHANNEL='#p2pool-alt',
         VERSION_CHECK=lambda v: v >= 60004,
     ),

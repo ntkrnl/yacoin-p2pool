@@ -144,6 +144,7 @@ def main(args, net, datadir_path, merged_urls, worker_endpoint):
         
         
         print 'Joining p2pool network using port %i...' % (args.p2pool_port,)
+
         
         @defer.inlineCallbacks
         def parse(x):

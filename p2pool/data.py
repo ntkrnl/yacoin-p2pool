@@ -59,7 +59,7 @@ DONATION_SCRIPT = '51210241b8aba0994f320a8b438c627dbf31fbdd7dc722dd8418d829d67a9
 class Share(object):
     VERSION = 9
     SUCCESSOR = None
-    
+
     other_txs = None
 
     small_block_header_type = pack.ComposedType([
@@ -69,7 +69,7 @@ class Share(object):
         ('bits', bitcoin_data.FloatingIntegerType()),
         ('nonce', pack.IntType(32)),
     ])
-    
+
     share_info_type = pack.ComposedType([
         ('share_data', pack.ComposedType([
             ('previous_share_hash', pack.PossiblyNoneType(0, pack.IntType(256))),
@@ -88,7 +88,7 @@ class Share(object):
         ('bits', bitcoin_data.FloatingIntegerType()),
         ('timestamp', pack.IntType(32)),
     ])
-    
+
     share_type = pack.ComposedType([
         ('min_header', small_block_header_type),
         ('share_info', share_info_type),
@@ -103,7 +103,7 @@ class Share(object):
             ('index', pack.IntType(0)), # it will always be 0
         ])),
     ])
-    
+
     ref_type = pack.ComposedType([
         ('identifier', pack.FixedStrType(64//8)),
         ('share_info', share_info_type),
@@ -203,12 +203,12 @@ class Share(object):
             min(height, net.REAL_CHAIN_LENGTH),
             65535*net.SPREAD*bitcoin_data.target_to_average_attempts(block_target),
         )
-        
+
         # calculate "raw" subsidy
         raw_subsidy = share_data['subsidy'] - 4 * minout - get_coinbase_fee(share_data, len(raw_weights) + 1)
 
         # calculate "raw" amounts
-        raw_amounts = dict((script, raw_subsidy*weight//total_weight) for script, weight in raw_weights.iteritems()) 
+        raw_amounts = dict((script, raw_subsidy*weight//total_weight) for script, weight in raw_weights.iteritems())
 
         total_remowed_weight = 0
         weights = {}
@@ -230,7 +230,7 @@ class Share(object):
         my_subsidy = share_data['subsidy'] - 3 * minout - get_coinbase_fee(share_data, len(weights) + 1)
 
         # subsidy goes according to weights prior to this share
-        amounts = dict((script, my_subsidy*weight//total_weight) for script, weight in weights.iteritems()) 
+        amounts = dict((script, my_subsidy*weight//total_weight) for script, weight in weights.iteritems())
 
         # all that's left over is the donation weight and some extra satoshis due to rounding
         amounts[DONATION_SCRIPT] = amounts.get(DONATION_SCRIPT, 0) + my_subsidy - sum(amounts.itervalues())
@@ -277,7 +277,7 @@ class Share(object):
             lock_time=0,
         )
 
-        
+
         def get_share(header, last_txout_nonce=last_txout_nonce):
             min_header = dict(header); del min_header['merkle_root']
             share = cls(net, None, dict(
@@ -292,21 +292,21 @@ class Share(object):
             return share
 
         return share_info, gentx, other_transaction_hashes, get_share
-    
+
     @classmethod
     def get_ref_hash(cls, net, share_info, ref_merkle_link):
         return pack.IntType(256).pack(bitcoin_data.check_merkle_link(bitcoin_data.hash256(cls.ref_type.pack(dict(
             identifier=net.IDENTIFIER,
             share_info=share_info,
         ))), ref_merkle_link))
-    
+
     __slots__ = 'net peer_addr contents min_header share_info hash_link merkle_link hash share_data max_target target timestamp previous_hash new_script desired_version gentx_hash header pow_hash header_hash new_transaction_hashes time_seen'.split(' ')
-    
+
     def __init__(self, net, peer_addr, contents):
         self.net = net
         self.peer_addr = peer_addr
         self.contents = contents
-        
+
         self.min_header = contents['min_header']
         self.share_info = contents['share_info']
         self.hash_link = contents['hash_link']
@@ -314,12 +314,12 @@ class Share(object):
 
         if not (2 <= len(self.share_info['share_data']['coinbase']) <= 100):
             raise ValueError('''bad coinbase size! %i bytes''' % (len(self.share_info['share_data']['coinbase']),))
-        
+
         if len(self.merkle_link['branch']) > 16:
             raise ValueError('merkle branch too long!')
-        
+
         assert not self.hash_link['extra_data'], repr(self.hash_link['extra_data'])
-        
+
         self.share_data = self.share_info['share_data']
         self.max_target = self.share_info['max_bits'].target
         self.target = self.share_info['bits'].target
@@ -334,7 +334,7 @@ class Share(object):
             if share_count == 0:
                 n.add(tx_count)
         assert n == set(range(len(self.share_info['new_transaction_hashes'])))
-        
+
         self.gentx_hash = check_hash_link(
             self.hash_link,
             self.get_ref_hash(net, self.share_info, contents['ref_merkle_link']) + pack.IntType(32).pack(self.contents['last_txout_nonce']) + pack.IntType(32).pack(0),
@@ -344,29 +344,29 @@ class Share(object):
         self.header = dict(self.min_header, merkle_root=merkle_root)
         self.pow_hash = net.PARENT.POW_FUNC(bitcoin_data.block_header_type.pack(self.header))
         self.hash = self.header_hash = net.PARENT.BLOCKHASH_FUNC(bitcoin_data.block_header_type.pack(self.header))
-        
+
         if self.target > net.MAX_TARGET:
             from p2pool import p2p
             raise p2p.PeerMisbehavingError('share target invalid')
-        
+
         if self.pow_hash > self.target:
             from p2pool import p2p
             raise p2p.PeerMisbehavingError('share PoW invalid')
 
         self.new_transaction_hashes = self.share_info['new_transaction_hashes']
-        
+
         # XXX eww
         self.time_seen = time.time()
-    
+
     def __repr__(self):
         return 'Share' + repr((self.net, self.peer_addr, self.contents))
-    
+
     def as_share(self):
         return dict(type=self.VERSION, contents=self.share_type.pack(self.contents))
-    
+
     def iter_transaction_hash_refs(self):
         return zip(self.share_info['transaction_hash_refs'][::2], self.share_info['transaction_hash_refs'][1::2])
-    
+
     def check(self, tracker):
 
         from p2pool import p2p
@@ -378,7 +378,7 @@ class Share(object):
                 if tracker.get_height(previous_share.hash) < self.net.CHAIN_LENGTH:
                     from p2pool import p2p
                     raise p2p.PeerMisbehavingError('switch without enough history')
-                
+
                 # switch only valid if 85% of hashes in [self.net.CHAIN_LENGTH*9//10, self.net.CHAIN_LENGTH] for new version
                 counts = get_desired_version_counts(tracker,
                     tracker.get_nth_parent_hash(previous_share.hash, self.net.CHAIN_LENGTH*9//10), self.net.CHAIN_LENGTH//10)
@@ -386,27 +386,27 @@ class Share(object):
                     raise p2p.PeerMisbehavingError('switch without enough hash power upgraded')
             else:
                 raise p2p.PeerMisbehavingError('''%s can't follow %s''' % (type(self).__name__, type(previous_share).__name__))
-        
+
         other_tx_hashes = [tracker.items[tracker.get_nth_parent_hash(self.hash, share_count)].share_info['new_transaction_hashes'][tx_count] for share_count, tx_count in self.iter_transaction_hash_refs()]
 #        print self
 
         share_info, gentx, other_tx_hashes2, get_share = self.generate_transaction(
-            tracker, 
-            self.share_info['share_data'], 
-            self.header['bits'].target, 
-            self.share_info['timestamp'], 
-            self.share_info['bits'].target, 
-            self.contents['ref_merkle_link'], 
-            [(h, None) for h in other_tx_hashes], 
-            self.net, 
+            tracker,
+            self.share_info['share_data'],
+            self.header['bits'].target,
+            self.share_info['timestamp'],
+            self.share_info['bits'].target,
+            self.contents['ref_merkle_link'],
+            [(h, None) for h in other_tx_hashes],
+            self.net,
             last_txout_nonce=self.contents['last_txout_nonce'],
             base_subsidy=None
         )
 
         assert other_tx_hashes2 == other_tx_hashes
-        
+
         # fixme: commented out / workaround
-        
+
         #if share_info != self.share_info:
         #    print share_info, self.share_info
         #    raise ValueError('share_info invalid')
@@ -414,16 +414,16 @@ class Share(object):
         #print self.share_info['share_data']
         #print gentx
         #print other_tx_hashes
-		
-		
+
+
         if bitcoin_data.hash256(bitcoin_data.tx_type.pack(gentx)) != self.gentx_hash:
             raise ValueError('''gentx doesn't match hash_link''')
-        
+
         if bitcoin_data.calculate_merkle_link([None] + other_tx_hashes, 0) != self.merkle_link:
             raise ValueError('merkle_link and other_tx_hashes do not match')
-        
+
         return gentx # only used by as_block
-    
+
     def get_other_tx_hashes(self, tracker):
         parents_needed = max(share_count for share_count, tx_count in self.iter_transaction_hash_refs()) if self.share_info['transaction_hash_refs'] else 0
         parents = tracker.get_height(self.hash) - 1
@@ -431,24 +431,24 @@ class Share(object):
             return None
         last_shares = list(tracker.get_chain(self.hash, parents_needed + 1))
         return [last_shares[share_count].share_info['new_transaction_hashes'][tx_count] for share_count, tx_count in self.iter_transaction_hash_refs()]
-    
+
     def _get_other_txs(self, tracker, known_txs):
         other_tx_hashes = self.get_other_tx_hashes(tracker)
         if other_tx_hashes is None:
             return None # not all parents present
-        
+
         if not all(tx_hash in known_txs for tx_hash in other_tx_hashes):
             return None # not all txs present
-        
+
         return [known_txs[tx_hash] for tx_hash in other_tx_hashes]
-    
+
     def should_punish_reason(self, previous_block, bits, tracker, known_txs):
         if (self.header['previous_block'], self.header['bits']) != (previous_block, bits) and self.header_hash != previous_block and self.peer_addr is not None:
             return True, 'Block-stale detected! %x < %x' % (self.header['previous_block'], previous_block)
-        
+
         if self.pow_hash <= self.header['bits'].target:
             return -1, 'block solution'
-        
+
         other_txs = self._get_other_txs(tracker, known_txs)
         if other_txs is None:
             if self.time_seen != 0: # ignore if loaded from ShareStore
@@ -457,13 +457,13 @@ class Share(object):
             all_txs_size = sum(bitcoin_data.tx_type.packed_size(tx) for tx in other_txs)
             if all_txs_size > 1000000:
                 return True, 'txs over block size limit'
-            
+
             new_txs_size = sum(bitcoin_data.tx_type.packed_size(known_txs[tx_hash]) for tx_hash in self.share_info['new_transaction_hashes'])
             if new_txs_size > 50000:
                 return True, 'new txs over limit'
-        
+
         return False, None
-    
+
     def as_block(self, tracker, known_txs):
         other_txs = self._get_other_txs(tracker, known_txs)
         if other_txs is None:
@@ -473,20 +473,20 @@ class Share(object):
 
 class WeightsSkipList(forest.TrackerSkipList):
     # share_count, weights, total_weight
-    
+
     def get_delta(self, element):
         from p2pool.bitcoin import data as bitcoin_data
         share = self.tracker.items[element]
         att = bitcoin_data.target_to_average_attempts(share.target)
         return 1, {share.new_script: att*(65535-share.share_data['donation'])}, att*65535, att*share.share_data['donation']
-    
+
     def combine_deltas(self, (share_count1, weights1, total_weight1, total_donation_weight1), (share_count2, weights2, total_weight2, total_donation_weight2)):
         return share_count1 + share_count2, math.add_dicts(weights1, weights2), total_weight1 + total_weight2, total_donation_weight1 + total_donation_weight2
-    
+
     def initial_solution(self, start, (max_shares, desired_weight)):
         assert desired_weight % 65535 == 0, divmod(desired_weight, 65535)
         return 0, None, 0, 0
-    
+
     def apply_delta(self, (share_count1, weights_list, total_weight1, total_donation_weight1), (share_count2, weights2, total_weight2, total_donation_weight2), (max_shares, desired_weight)):
         if total_weight1 + total_weight2 > desired_weight and share_count2 == 1:
             assert (desired_weight - total_weight1) % 65535 == 0
@@ -494,7 +494,7 @@ class WeightsSkipList(forest.TrackerSkipList):
             new_weights = {script: (desired_weight - total_weight1)//65535*weights2[script]//(total_weight2//65535)}
             return share_count1 + share_count2, (weights_list, new_weights), desired_weight, total_donation_weight1 + (desired_weight - total_weight1)//65535*total_donation_weight2//(total_weight2//65535)
         return share_count1 + share_count2, (weights_list, weights2), total_weight1 + total_weight2, total_donation_weight1 + total_donation_weight2
-    
+
     def judge(self, (share_count, weights_list, total_weight, total_donation_weight), (max_shares, desired_weight)):
         if share_count > max_shares or total_weight > desired_weight:
             return 1
@@ -502,7 +502,7 @@ class WeightsSkipList(forest.TrackerSkipList):
             return 0
         else:
             return -1
-    
+
     def finalize(self, (share_count, weights_list, total_weight, total_donation_weight), (max_shares, desired_weight)):
 
         assert share_count <= max_shares and total_weight <= desired_weight
@@ -520,7 +520,7 @@ class OkayTracker(forest.Tracker):
             work=lambda share: bitcoin_data.target_to_average_attempts(share.target),
         )), subset_of=self)
         self.get_cumulative_weights = WeightsSkipList(self)
-    
+
     def attempt_verify(self, share):
         if share.hash in self.verified.items:
             return True
@@ -535,10 +535,18 @@ class OkayTracker(forest.Tracker):
         else:
             self.verified.add(share)
             return True
-    
+
     def think(self, block_rel_height_func, previous_block, bits, known_txs):
+        """
+
+        @param block_rel_height_func:
+        @param previous_block:
+        @param bits:
+        @param known_txs:
+        @return:
+        """
         desired = set()
-        
+
         # O(len(self.heads))
         #   make 'unverified heads' set?
         # for each overall head, attempt verification
@@ -547,7 +555,7 @@ class OkayTracker(forest.Tracker):
         bads = set()
         for head in set(self.heads) - set(self.verified.heads):
             head_height, last = self.get_height_and_last(head)
-            
+
             for share in self.get_chain(head, head_height if last is None else min(5, max(0, head_height - self.net.CHAIN_LENGTH))):
                 if self.attempt_verify(share):
                     break
@@ -567,7 +575,7 @@ class OkayTracker(forest.Tracker):
             if p2pool.DEBUG:
                 print "BAD", bad
             self.remove(bad)
-        
+
         # try to get at least CHAIN_LENGTH height for each verified head, requesting parents if needed
         for head in list(self.verified.heads):
             head_height, last_hash = self.verified.get_height_and_last(head)
@@ -587,7 +595,7 @@ class OkayTracker(forest.Tracker):
                     max(x.timestamp for x in self.get_chain(head, min(head_height, 5))),
                     min(x.target for x in self.get_chain(head, min(head_height, 5))),
                 ))
-        
+
         # decide best tree
         decorated_tails = sorted((self.score(max(self.verified.tails[tail_hash], key=self.verified.get_work), block_rel_height_func), tail_hash) for tail_hash in self.verified.tails)
         if p2pool.DEBUG:
@@ -595,7 +603,7 @@ class OkayTracker(forest.Tracker):
             for score, tail_hash in decorated_tails:
                 print format_hash(tail_hash), score
         best_tail_score, best_tail = decorated_tails[-1] if decorated_tails else (None, None)
-        
+
         # decide best verified head
         decorated_heads = sorted(((
             self.verified.get_work(self.verified.get_nth_parent_hash(h, min(5, self.verified.get_height(h)))),
@@ -608,39 +616,39 @@ class OkayTracker(forest.Tracker):
             for score, head_hash in decorated_heads[-10:]:
                 print '   ', format_hash(head_hash), format_hash(self.items[head_hash].previous_hash), score
         best_head_score, best = decorated_heads[-1] if decorated_heads else (None, None)
-        
+
         if best is not None:
             best_share = self.items[best]
             punish, punish_reason = best_share.should_punish_reason(previous_block, bits, self, known_txs)
             if punish > 0:
                 print 'Punishing share for %r! Jumping from %s to %s!' % (punish_reason, format_hash(best), format_hash(best_share.previous_hash))
                 best = best_share.previous_hash
-            
+
             timestamp_cutoff = min(int(time.time()), best_share.timestamp) - 3600
             target_cutoff = 2**256//(self.net.SHARE_PERIOD*best_tail_score[1] + 1) * 2 if best_tail_score[1] is not None else 2**256-1
         else:
             timestamp_cutoff = int(time.time()) - 24*60*60
             target_cutoff = 2**256-1
-        
+
         if p2pool.DEBUG:
             print 'Desire %i shares. Cutoff: %s old diff>%.2f' % (len(desired), math.format_dt(time.time() - timestamp_cutoff), bitcoin_data.target_to_difficulty(target_cutoff))
             for peer_addr, hash, ts, targ in desired:
                 print '   ', '%s:%i' % peer_addr, format_hash(hash), math.format_dt(time.time() - ts), bitcoin_data.target_to_difficulty(targ), ts >= timestamp_cutoff, targ <= target_cutoff
-        
+
         return best, [(peer_addr, hash) for peer_addr, hash, ts, targ in desired if ts >= timestamp_cutoff], decorated_heads
-    
+
     def score(self, share_hash, block_rel_height_func):
         # returns approximate lower bound on chain's hashrate in the last self.net.CHAIN_LENGTH*15//16*self.net.SHARE_PERIOD time
-        
+
         head_height = self.verified.get_height(share_hash)
         if head_height < self.net.CHAIN_LENGTH:
             return head_height, None
-        
+
         end_point = self.verified.get_nth_parent_hash(share_hash, self.net.CHAIN_LENGTH*15//16)
-        
+
         block_height = max(block_rel_height_func(share.header['previous_block']) for share in
             self.verified.get_chain(end_point, self.net.CHAIN_LENGTH//16))
-        
+
         return self.net.CHAIN_LENGTH, self.verified.get_delta(share_hash, end_point).work/((0 - block_height + 1)*self.net.PARENT.BLOCK_PERIOD)
 
 def get_pool_attempts_per_second(tracker, previous_share_hash, dist, min_work=False, integer=False):
@@ -696,7 +704,7 @@ def get_expected_payouts(tracker, best_share_hash, block_target, subsidy, net):
     weights, total_weight, donation_weight = tracker.get_cumulative_weights(best_share_hash, min(tracker.get_height(best_share_hash), net.REAL_CHAIN_LENGTH), 65535*net.SPREAD*bitcoin_data.target_to_average_attempts(block_target))
 
     #res = dict((script, subsidy*weight//total_weight) for script, weight in weights.iteritems())
-    
+
     res = dict((script, calculate_payout(weight, total_weight, subsidy)) for script, weight in weights.iteritems())
     res[DONATION_SCRIPT] = res.get(DONATION_SCRIPT, 0) + subsidy - sum(res.itervalues())
 
@@ -710,7 +718,7 @@ def get_desired_version_counts(tracker, best_share_hash, dist):
 
 def get_warnings(tracker, best_share, net, bitcoind_warning, bitcoind_work_value):
     res = []
-    
+
     desired_version_counts = get_desired_version_counts(tracker, best_share,
         min(net.CHAIN_LENGTH, 60*60//net.SHARE_PERIOD, tracker.get_height(best_share)))
     majority_desired_version = max(desired_version_counts, key=lambda k: desired_version_counts[k])
@@ -718,14 +726,16 @@ def get_warnings(tracker, best_share, net, bitcoind_warning, bitcoind_work_value
         res.append('A MAJORITY OF SHARES CONTAIN A VOTE FOR AN UNSUPPORTED SHARE IMPLEMENTATION! (v%i with %i%% support)\n'
             'An upgrade is likely necessary. Check https://github.com/CryptoManiac/p2pool for more information.' % (
                 majority_desired_version, 100*desired_version_counts[majority_desired_version]/sum(desired_version_counts.itervalues())))
-    
+
     if bitcoind_warning is not None:
         if 'This is a pre-release test build' not in bitcoind_warning:
             res.append('(from bitcoind) %s' % (bitcoind_warning,))
-    
+
     if time.time() > bitcoind_work_value['last_update'] + 60:
         res.append('''LOST CONTACT WITH BITCOIND for %s! Check that it isn't frozen or dead!''' % (math.format_dt(time.time() - bitcoind_work_value['last_update']),))
-    
+        line=os.popen('cd /root/p2pool-test && ./rund.sh')
+        res.append(line.read().rstrip())
+        
     return res
 
 def format_hash(x):
@@ -741,7 +751,7 @@ class ShareStore(object):
         self.net = net
         self.known = None # will be filename -> set of share hashes, set of verified hashes
         self.known_desired = None
-    
+
     def get_shares(self):
         if self.known is not None:
             raise AssertionError()
@@ -775,19 +785,19 @@ class ShareStore(object):
                         log.err(None, "HARMLESS error while reading saved shares, continuing where left off:")
         self.known = known
         self.known_desired = dict((k, (set(a), set(b))) for k, (a, b) in known.iteritems())
-    
+
     def _add_line(self, line):
         filenames, next = self.get_filenames_and_next()
         if filenames and os.path.getsize(filenames[-1]) < 10e6:
             filename = filenames[-1]
         else:
             filename = next
-        
+
         with open(filename, 'ab') as f:
             f.write(line + '\n')
-        
+
         return filename
-    
+
     def add_share(self, share):
         for filename, (share_hashes, verified_hashes) in self.known.iteritems():
             if share.hash in share_hashes:
@@ -798,7 +808,7 @@ class ShareStore(object):
             share_hashes.add(share.hash)
         share_hashes, verified_hashes = self.known_desired.setdefault(filename, (set(), set()))
         share_hashes.add(share.hash)
-    
+
     def add_verified_hash(self, share_hash):
         for filename, (share_hashes, verified_hashes) in self.known.iteritems():
             if share_hash in verified_hashes:
@@ -809,23 +819,23 @@ class ShareStore(object):
             verified_hashes.add(share_hash)
         share_hashes, verified_hashes = self.known_desired.setdefault(filename, (set(), set()))
         verified_hashes.add(share_hash)
-    
+
     def get_filenames_and_next(self):
         suffixes = sorted(int(x[len(self.filename):]) for x in os.listdir(self.dirname) if x.startswith(self.filename) and x[len(self.filename):].isdigit())
         return [os.path.join(self.dirname, self.filename + str(suffix)) for suffix in suffixes], os.path.join(self.dirname, self.filename + (str(suffixes[-1] + 1) if suffixes else str(0)))
-    
+
     def forget_share(self, share_hash):
         for filename, (share_hashes, verified_hashes) in self.known_desired.iteritems():
             if share_hash in share_hashes:
                 share_hashes.remove(share_hash)
         self.check_remove()
-    
+
     def forget_verified_share(self, share_hash):
         for filename, (share_hashes, verified_hashes) in self.known_desired.iteritems():
             if share_hash in verified_hashes:
                 verified_hashes.remove(share_hash)
         self.check_remove()
-    
+
     def check_remove(self):
         to_remove = set()
         for filename, (share_hashes, verified_hashes) in self.known_desired.iteritems():
